@@ -25,3 +25,5 @@ pkg/*
 ldpc.go
 *.bak
 *~
+bin/*
+

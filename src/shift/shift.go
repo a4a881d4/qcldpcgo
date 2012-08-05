@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type shift struct {
+type Shift struct {
 	buf []uint32
 }
 
@@ -12,12 +12,14 @@ var	length int
 var size int
 var mask uint32
 
-func (a *shift) init() {
+func NewShift() *Shift{
+	a := new( Shift )
 	a.buf = make( []uint32, size )
+	return a
 }
 
-func Init( length int )	{
-	length = length
+func Init( inLen int )	{
+	length = inLen
 	size = (length+31)/32
 	var left int
 	left = int(size*32-length)
@@ -33,31 +35,31 @@ func shiftMy( a uint32, s int ) uint32 {
 	return a
 }
 
-func ( a *shift ) clean() {
+func ( a *Shift ) clean() {
 	for i:=0;i<int(size);i++ {
 		a.buf[i] = 0
 	}
 }
 
-func clean( a []shift ) {
+func clean( a []Shift ) {
 	for i:=0;i<len(a);i++ {
 		a[i].clean()
 	}
 }
 
-func ( my *shift ) dump( a shift )	{
+func ( my *Shift ) dump( a Shift )	{
 	for i:=0;i<int(size);i++ {
 		my.buf[i]=a.buf[i];
 	}
 }
 
-func cpy( from []shift, to []shift )	{
+func cpy( from []Shift, to []Shift )	{
 	for i:=0;i<len(to);i++ {
 		to[i].dump(from[i])
 	}
 }
 
-func (a *shift) weight() int	{
+func (a *Shift) weight() int	{
 	i:=0;
 	for j:=0;j<int(length);j++ {
 		if ((a.buf[j/32]>>uint(j%32))&1) == 1 {
@@ -67,51 +69,51 @@ func (a *shift) weight() int	{
 	return i
 }
 
-func ( a *shift ) mac( b shift, s int ) {
-	b = b.shiftH2L(s)
+func ( a *Shift ) Mac( b Shift, s int ) {
+	b = b.ShiftH2L(s)
 	for i:=0;i<int(size);i++ {
 		a.buf[i]^=b.buf[i]
 	}
 }
 
-func (a *shift) setXk( k int )	{
+func (a *Shift) SetXk( k int )	{
 		a.zero()
 		a.buf[k/32] = 1<<uint(k%32);
 }
 
-func ( a *shift ) zero()	{
+func ( a *Shift ) zero()	{
 	for i:=0;i<int(size);i++ {
 			a.buf[i]=0;
 	}
 }
 	
-func zero( a []shift )	{
+func zero( a []Shift )	{
 	for i:=0;i<len(a);i++ {
 		a[i].zero()
 	}
 }
 
-func alloc( k int ) []shift {
-	var ret = make( []shift, k )
+func alloc( k int ) []Shift {
+	var ret = make( []Shift, k )
 	zero(ret)
 	return ret
 }
 
-func alloc2D( a [][]int ) [][]shift {
-	var ret = make( [][]shift, len(a) )
+func alloc2D( a [][]int ) [][]Shift {
+	var ret = make( [][]Shift, len(a) )
 	for i:=0;i<len(a);i++ {
 		ret[i]=alloc(len(a[i]))
 		for j:=0;j<len(a[i]);j++ {
 			if a[i][j]!=int(length) {
-				ret[i][j].setXk((length-int(a[i][j]))%length)
+				ret[i][j].SetXk((length-int(a[i][j]))%length)
 			}
 		}
 	}
 	return ret
 }
 
-func reverse( a shift )	shift {
-	b := new( shift )
+func reverse( a Shift )	Shift {
+	b := NewShift()
 	b.zero()
 	var i int;
 	for i=0;i<length;i++	{
@@ -122,7 +124,7 @@ func reverse( a shift )	shift {
 	return *b
 }
 
-func (a *shift) isXk() int {
+func (a *Shift) IsXk() int {
 	var i int;
 	for i=0;i<int(length);i++ {
 		if ((a.buf[i/32]>>uint(i%32))&1)==1 {
@@ -164,7 +166,7 @@ func mid( a []uint32, begin int, end int, to int )	uint32	{
 	return r
 }
 
-func ( b *shift )shiftOneInt( a shift, s int )	{
+func ( b *Shift )ShiftOneInt( a Shift, s int )	{
 	for i:=0;i<size-1;i++ {
 		b.buf[i]=mid(a.buf,(i*32+s)%length,(i*32+31+s)%length,31)
 	}
@@ -172,8 +174,8 @@ func ( b *shift )shiftOneInt( a shift, s int )	{
 	b.buf[size-1]&=mask
 }
 
-func ( a *shift ) shiftOne( s int ) shift{
-	b := new( shift )
+func ( a *Shift ) ShiftOne( s int ) Shift{
+	b := NewShift()
 	for i:=0;i<size-1;i++ {
 		b.buf[i]=mid(a.buf,(i*32+s)%length,(i*32+31+s)%length,31);
 	}
@@ -182,16 +184,16 @@ func ( a *shift ) shiftOne( s int ) shift{
 	return *b
 }
 
-func ( a *shift ) shiftH2L( s int ) shift	{
-	return a.shiftOne(s)
+func ( a *Shift ) ShiftH2L( s int ) Shift	{
+	return a.ShiftOne(s)
 }
 	
-func (a *shift) shiftL2H( s int ) shift {
-		return a.shiftOne(length-s);
+func (a *Shift) ShiftL2H( s int ) Shift {
+		return a.ShiftOne(length-s);
 }
 	
-func (a *shift) shiftOneByExt( s int ) shift {
-	r := new( shift )
+func (a *Shift) ShiftOneByExt( s int ) Shift {
+	r := NewShift()
 	var temp = make([]uint32,length)
 	for i:=0;i<length;i++ {
 		temp[i] = (a.buf[i/32]>>uint(i%32))&1
@@ -205,7 +207,7 @@ func (a *shift) shiftOneByExt( s int ) shift {
 	return *r
 }
 	
-func ( a *shift ) Equ( b shift ) bool	{
+func ( a *Shift ) Equ( b Shift ) bool	{
 	for i:=0;i<size;i++ {
 		if a.buf[i]!=b.buf[i]	{
 			return false
@@ -214,7 +216,7 @@ func ( a *shift ) Equ( b shift ) bool	{
 	return true
 }
 
-func ( a *shift ) print() {
+func ( a *Shift ) print() {
 	c := uint32(0);
 	for i:=0;i<length;i++ {
 		c<<=1
@@ -225,13 +227,13 @@ func ( a *shift ) print() {
 	}
 }
 
-func ( a *shift ) printH2L()	{
+func ( a *Shift ) printH2L()	{
 	for i:=size-1;i>=0;i-- {
 		fmt.Printf("%08x",a.buf[i])
 	}
 }
 
-func printArray(a []shift, name string, comma int )	{
+func printArray(a []Shift, name string, comma int )	{
 	if (comma&2) == 2 && name != "" {
 		fmt.Println(name);
 	}
