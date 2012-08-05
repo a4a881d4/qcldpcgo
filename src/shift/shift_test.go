@@ -1,4 +1,4 @@
-package qcldpc
+package shift
 import  (
 	"fmt"
 	"testing"
