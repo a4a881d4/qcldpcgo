@@ -1,6 +1,8 @@
 package qcldpc
-import "fmt"
-import 'testing'
+import  (
+	"fmt"
+	"testing"
+)
 
 func TestShift( t *Testing.T )
 {

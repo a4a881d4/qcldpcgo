@@ -3,24 +3,25 @@ package qcldpc
 import "fmt"
 
 type shift struct {
-	buf []uint32;
+	buf []uint32
 }
 
-var	length uint;
-var size uint;
-var mask uint32;
+var	length uint
+var size uint
+var mask uint32
 
 func Init( length uint )	{
-	size := (length+31)/32
-	left := size*32-length
-	mask := shiftMy((0xffffffff),left)
+	length = length
+	size = (length+31)/32
+	left = size*32-length
+	mask = shiftMy((0xffffffff),left)
 }
 
 func shiftMy( a uint32, s int32 ) uint32 {
 	if s>=1	{
-		a = a>>1
+		a >>= 1
 		a &= 0x7fffffff
-		a = a>>(s-1)
+		a >>= (s-1)
 	}
 	return a
 }
@@ -62,7 +63,8 @@ func (a *shift) weight() int	{
 func ( a *shift ) mac( b shift, s int ) {
 	b = b.shiftH2L(s)
 	for i:=0;i<size;i++ {
-		a.buf[i]^=b.buf[i];
+		a.buf[i]^=b.buf[i]
+	}
 }
 
 func (a *shift) setXk( k uint )	{
@@ -83,20 +85,19 @@ func zero( a []shift )	{
 }
 
 func alloc( k uint ) []shift {
-	ret := new [k]shift
+	var ret = make( []shift, k )
 	for i:=0;i<k;i++ {
-		ret[i]= new shift
+		ret[i]= new( shift )
 	}
 	zero(ret)
 	return ret
 }
 
-func alloc( a [][]int) [][]shift {
-	int i,j
-	ret := new [len(a)][]shift
+func allocArray( a [][]int ) [][]shift {
+	var ret = make( [][]shift, len(a) )
 	for i:=0;i<len(a);i++ {
 		ret[i]=alloc(a[i].length)
-		for j=0;j<len(a[i]);j++ {
+		for j:=0;j<len(a[i]);j++ {
 			if a[i][j]!=length {
 				ret[i][j].setXk((length-a[i][j])%length)
 			}
@@ -106,7 +107,7 @@ func alloc( a [][]int) [][]shift {
 }
 
 func reverse(shift a)	shift {
-	b := new shift
+	b := new( shift )
 	b.zero()
 	for i=0;i<length;i++	{
 		j := (length-i)%length
@@ -118,9 +119,13 @@ func reverse(shift a)	shift {
 
 func (a *shift) isXk() int {
 	for i:=0;i<length;i++ {
-		if ((buf[i/32]>>(i%32))&1)==1 break
+		if ((buf[i/32]>>(i%32))&1)==1 {
+			break
+		}
 	}
-	if i==length return -2
+	if i==length {
+		return -2
+	}
 	for j:=i+1;j<length;j++ {
 		if ((buf[j/32]>>(j%32))&1)==1 {
 			fmt.Printf("%d is one but %d is not zero, \"buf[%d]=%08x, buf[%d]=%08x\"\n",
@@ -131,9 +136,10 @@ func (a *shift) isXk() int {
 	return i
 }
 	
-func mid( uint []a, int begin, int end, int to )	uint	{
+func mid( uint []a, begin int, end int, to int )	uint	{
+	var r uint;
 	if begin>end {
-		r := mid(a,0,end,to);
+		r = mid(a,0,end,to);
 		r |= mid(a,begin,length-1,length-1-begin);
 		return r
 	}
@@ -142,13 +148,12 @@ func mid( uint []a, int begin, int end, int to )	uint	{
 	posB := begin/32;
 	leftB := begin%32;
 	if posE==posB	{
-		r := a[posE]<<(31-leftE)
+		r = a[posE]<<(31-leftE)
 		r = shiftMy( r , (31-leftE+leftB))
 		r = r<<(to-(end-begin))
-	}
-	else {
-		r := shiftMy(a[posB],leftB);
-		r |= a[posE]<<(to-leftE);
+	} else {
+		r = shiftMy(a[posB],leftB)
+		r |= a[posE]<<(to-leftE)
 	}
 	return r
 }
@@ -161,8 +166,8 @@ func ( b *shift )shiftOneInt( a shift, s int )	{
 	b.buf[size-1]&=mask
 }
 
-func ( a *shift ) shiftOne( int s ) shift{
-	b := new shift;
+func ( a *shift ) shiftOne( s int ) shift{
+	b := new( shift )
 	for i:=0;i<size-1;i++ {
 		b.buf[i]=mid(a.buf,(i*32+s)%length,(i*32+31+s)%length,31);
 	}
@@ -180,17 +185,21 @@ func (a *shift) shiftL2H( s int ) shift {
 }
 	
 func (a *shift) shiftOneByExt( s int ) shift {
-	r := new shift
-	temp := new [length]int
-	for i:=0;i<length;i++	temp[i] = (a.buf[i/32]>>(i%32))&1;
-	for i:=0;i<size;i++ r.buf[i]=0
+	r := new( shift )
+	var temp = make([]int,length)
+	for i:=0;i<length;i++ {
+		temp[i] = (a.buf[i/32]>>(i%32))&1
+	}
+	r.zero()
 	for i:=0;i<length;i++	{
-		if temp[(i+s)%length]== 1 r.buf[i/32]|=1<<(i%32)
+		if temp[(i+s)%length]== 1 {
+			r.buf[i/32]|=1<<(i%32)
+		}
 	}	
 	return r
 }
 	
-func	( a *shift ) Equ( b shift ) bool	{
+func ( a *shift ) Equ( b shift ) bool	{
 	for i:=0;i<size;i++ {
 		if a.buf[i]!=b.buf[i]	{
 			return false
